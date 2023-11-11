@@ -1,2 +1,20 @@
 pip install -r requirements.txt
 instale Ghostscript
+
+
+Tarefas:
+
+1 - Aumentar precisão da inteligencia artificial
+  + Tentar implementar com logica de fuzzy
+2 - No canvas, mudar forma de exportação das letras, jogando para png possivelmente
+*FALAR PARA AS PESSOAS 3 - Limitar o uso para caixa alta (letras separadas, botar uma alerta na tela)
+4 - Capturar caracteres separados (diferentes vetores, diferentes traço)
+  + Cuidado com letras escritas com mais de um traço (ex a letra 't')
+  + Talvez capturar por espaços em branco ou verificar se os traços estão nos mesmos eixos
+(opcional)
+5 - Adicionar suporte à completude de texto
+
+
+1 - Victor
+
+2 e 4 - Vinicius
