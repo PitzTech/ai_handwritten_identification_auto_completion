@@ -3,12 +3,7 @@ import numpy as np
 import os
 import pandas as pd
 from sklearn.model_selection import train_test_split
-
 import tensorflow as tf
-from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense
-from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 PATH = os.getcwd()
 DATASET_PATH = os.path.join(PATH, 'dataset')
@@ -111,30 +106,20 @@ def process_images(dict_img):
 
   return np.array(processed_data), np.array(labels)
 
-def build_cnn(input_shape, num_classes):
-  model = tf.keras.Sequential([
-      Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=input_shape),
-      MaxPooling2D(pool_size=(2, 2)),
-      Conv2D(64, (3, 3), activation='relu'),
-      MaxPooling2D(pool_size=(2, 2)),
-      Flatten(),
-      Dense(128, activation='relu'),
-      Dense(num_classes, activation='softmax')
-  ])
-  model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-  return model
 
 def preprocess_images(images, target_size=(28, 28)):
-  processed_images = []
-  for img in images:
-      # Redimensionar a imagem
-      img_resized = cv2.resize(img, target_size, interpolation=cv2.INTER_AREA)
-      # Normalizar os valores dos pixels para o intervalo [0, 1]
-      img_normalized = img_resized / 255.0
-      # Adicionar uma dimensão de canal
-      img_normalized = np.expand_dims(img_normalized, axis=-1)
-      processed_images.append(img_normalized)
-  return np.array(processed_images)
+    processed_images = []
+    for img in images:
+        # Redimensionar a imagem
+        img_resized = cv2.resize(img, target_size)
+        # Normalizar os valores dos pixels para o intervalo [0, 1]
+        img_normalized = img_resized / 255.0
+        # Adicionar uma dimensão de canal
+        img_normalized = np.expand_dims(img_normalized, axis=-1)
+        processed_images.append(img_normalized)
+    return np.array(processed_images)
+
+
 
 print('Starting Training')
 
@@ -145,51 +130,32 @@ dict_img, label_classes = readDataset()
 print('Processing Images')
 X, y = process_images(dict_img)
 
-print('Pre processing the image')
-# Aplicar pré-processamento a todas as imagens
-X_processed = preprocess_images(X)
+print('Pre Processing Images')
+pre_processed_images = preprocess_images(X)
 
-print('Converting Labels')
+
 # Convertendo rótulos em números
+print('Converting labels into numbers')
 label_to_id = {label: idx for idx, label in enumerate(label_classes)}
 y_numeric = np.array([label_to_id[label] for label in y])
 
-print('Splitting dataset')
 # Dividindo os dados em conjuntos de treino e teste
-X_train, X_test, y_train, y_test = train_test_split(X_processed, y_numeric, test_size=0.2)
+print('Spliting dataset')
+X_train, X_test, y_train, y_test = train_test_split(pre_processed_images, y_numeric, test_size=0.2)
 
-print('Building CNN')
-# Criar a CNN
-model = build_cnn(input_shape=(28, 28, 1), num_classes=len(label_classes))
+# Construção da rede neural
+model = tf.keras.models.Sequential([
+    tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
+    tf.keras.layers.Dense(len(label_classes), activation='softmax')  # Número de classes
+])
 
-print('Creating Data Augmentation generator')
-# Definindo o gerador de aumento de dados
-# datagen = ImageDataGenerator(
-#     rotation_range=10,  # rotação aleatória
-#     width_shift_range=0.1,  # deslocamento horizontal aleatório
-#     height_shift_range=0.1,  # deslocamento vertical aleatório
-#     zoom_range=0.1,  # zoom aleatório
-#     horizontal_flip=False,  # não aplicar flip horizontal
-#     fill_mode='nearest'  # preencher pixels novos com o 'mais próximo'
-# )
-datagen = ImageDataGenerator(
-    rotation_range=0,  # rotação aleatória
-    width_shift_range=0,  # deslocamento horizontal aleatório
-    height_shift_range=0,  # deslocamento vertical aleatório
-    zoom_range=0.1,  # zoom aleatório
-    horizontal_flip=False,  # não aplicar flip horizontal
-    fill_mode='nearest'  # preencher pixels novos com o 'mais próximo'
-)
+print('Compiling model')
+# Compilar o modelo
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
-print('Starting Training')
-# Treinamento do modelo com aumento de dados
-print('With augmented data')
-datagen.fit(X_train)
-print('Final fit')
-model.fit(datagen.flow(X_train, y_train, batch_size=32),
-          steps_per_epoch=len(X_train) / 32,
-          epochs=10,
-          validation_data=(X_test, y_test))
+print('Training Model')
+# Treinar o modelo
+model.fit(X_train, y_train, epochs=10, validation_split=0.1)
 print('Training completed')
 
 # Avaliação do modelo
